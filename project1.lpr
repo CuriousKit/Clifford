@@ -14,53 +14,53 @@ const
   INS_MULTIPLY = 4;
   INS_DIVIDE   = 5;
 
+function GetNextNumber(var Input: string; out Value: LongInt): TCliffordError;
+var
+  StrPos: SizeInt;
+  CurrentEntry: string;
+begin
+  Result := ceSuccess;
+
+  StrPos := Pos(' ', Input);
+  if StrPos > 0 then
+  begin
+    CurrentEntry := Copy(Input, 1, StrPos - 1);
+    { Remove entry from the list }
+    Delete(Input, 1, StrPos);
+
+  end else
+  begin
+    { Last entry in the list }
+    CurrentEntry := Input;
+    Input := '';
+  end;
+
+  if Length(CurrentEntry) = 0 then
+    Result := ceMissingArgument
+  else if not TryStrToInt(CurrentEntry, Value) then
+    Result := ceInvalidInput;
+end;
+
+function GetTopTwo(StackObject: TStack; out Top: Integer; out SecondTop: Integer): TCliffordError;
+begin
+  Result := ceSuccess;
+
+  { Check to see if the stack is empty or not }
+  if not StackObject.AtLeast(2) then
+  begin
+    Result := ceEmptyStack;
+    Exit;
+  end;
+
+  Top := Integer(StackObject.Pop);
+  SecondTop := Integer(StackObject.Pop);
+end;
+
+
 function Clifford(Input: string; out Answer: Integer): TCliffordError;
 var
   NumberStack: TStack;
   CurrentInstruction, Argument1, Argument2: Integer;
-
-  function GetNextNumber(out Value: LongInt): TCliffordError;
-  var
-    StrPos: SizeInt;
-    CurrentEntry: string;
-  begin
-    Result := ceSuccess;
-
-    StrPos := Pos(' ', Input);
-    if StrPos > 0 then
-    begin
-      CurrentEntry := Copy(Input, 1, StrPos - 1);
-      { Remove entry from the list }
-      Delete(Input, 1, StrPos);
-
-    end else
-    begin
-      { Last entry in the list }
-      CurrentEntry := Input;
-      Input := '';
-    end;
-
-    if Length(CurrentEntry) = 0 then
-      Result := ceMissingArgument
-    else if not TryStrToInt(CurrentEntry, Value) then
-      Result := ceInvalidInput;
-  end;
-
-  function GetTopTwo: TCliffordError;
-  begin
-    Result := ceSuccess;
-
-    { Check to see if the stack is empty or not }
-    if not NumberStack.AtLeast(2) then
-    begin
-      Result := ceEmptyStack;
-      Exit;
-    end;
-
-    Argument1 := Integer(NumberStack.Pop);
-    Argument2 := Integer(NumberStack.Pop);
-  end;
-
 begin
   try
     { Remove leading and trailing spaces }
@@ -79,7 +79,7 @@ begin
       while Length(Input) > 0 do
       begin
 
-        Result := GetNextNumber(CurrentInstruction);
+        Result := GetNextNumber(Input, CurrentInstruction);
         if Result <> ceSuccess then
           { Something went wrong }
           Exit;
@@ -88,7 +88,7 @@ begin
         case CurrentInstruction of
         INS_PUSH: { Push 1 Argument }
           begin
-            Result := GetNextNumber(Argument1);
+            Result := GetNextNumber(Input, Argument1);
             if Result <> ceSuccess then
               { Something went wrong }
               Exit;
@@ -109,7 +109,7 @@ begin
 
         INS_ADD: { Add top two entries on the stack }
           begin
-            Result := GetTopTwo;
+            Result := GetTopTwo(NumberStack, Argument1, Argument2);
             if Result <> ceSuccess then
               { Something went wrong }
               Exit;
@@ -121,7 +121,7 @@ begin
           begin
             { e.g. if the stack contains (3 5), with 3 being at the top, the
               result is (2), not (-2) }
-            Result := GetTopTwo;
+            Result := GetTopTwo(NumberStack, Argument1, Argument2);
             if Result <> ceSuccess then
               { Something went wrong }
               Exit;
@@ -131,7 +131,7 @@ begin
 
         INS_MULTIPLY: { Multiply th top two entries on the stack }
           begin
-            Result := GetTopTwo;
+            Result := GetTopTwo(NumberStack, Argument1, Argument2);
             if Result <> ceSuccess then
               { Something went wrong }
               Exit;
@@ -143,7 +143,7 @@ begin
           begin
             { e.g. if the stack contains (2 10), with 2 being at the top, the
               result is (10), not (0) }
-            Result := GetTopTwo;
+            Result := GetTopTwo(NumberStack, Argument1, Argument2);
             if Result <> ceSuccess then
               { Something went wrong }
               Exit;
